@@ -365,6 +365,25 @@ def clean_pcso(series_options, ds):
 
 def _convert_cso_to_dict(series_options):
     series_options_dict = {}
+
+    #patch by :mpag:
+    from builtins import str,bytes
+    try:
+        unicode = unicode
+    except NameError:
+        # 'unicode' is undefined, must be Python 3
+        str = str
+        unicode = str
+        bytes = bytes
+        basestring = (str,bytes)
+    else:
+        # 'unicode' exists, must be Python 2
+        str = str
+        unicode = unicode
+        bytes = str
+        basestring = basestring
+
+        
     #stod: series term and option dict
     for stod in series_options:
         try:

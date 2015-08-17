@@ -1,13 +1,26 @@
 import copy
 from collections import defaultdict
-from itertools import groupby, izip
+
+
+#patch by :mpag:
+#from itertools import groupby, izip
+from itertools import groupby
+try:
+    # Python 2
+    from itertools import izip
+except ImportError:
+    # Python 3
+    izip = zip
+
+
 # use SortedDict instead of native OrderedDict for Python 2.6 compatibility
 from django.utils.datastructures import SortedDict
 
-from highcharts import HCOptions
-from validation import clean_pcso, clean_cso, clean_x_sortf_mapf_mts
-from exceptions import APIInputError
-from chartdata import PivotDataPool, DataPool
+#patch by :mpag:
+from chartit.highcharts import HCOptions
+from chartit.validation import clean_pcso, clean_cso, clean_x_sortf_mapf_mts
+from chartit.exceptions import APIInputError
+from chartit.chartdata import PivotDataPool, DataPool
 
 class Chart(object):
     
@@ -152,11 +165,17 @@ class Chart(object):
         """
         dss = self.datasource.series
         x_axis_vqs_groups = defaultdict(dict)
-        sort_fn = lambda (tk, td): td.get('xAxis', 0)
+        #patch by :mpag:
+        #sort_fn = lambda (tk, td): td.get('xAxis', 0)
+        sort_fn = lambda tk_td: tk_td[1].get('xAxis', 0)
+
         so = sorted(self.series_options.items(), key=sort_fn)
         x_axis_groups = groupby(so, sort_fn)
         for (x_axis, itr1) in x_axis_groups:
-            sort_fn = lambda (tk, td): dss[td['_x_axis_term']]['_data']
+            #patch by :mpag:
+            #sort_fn = lambda (tk, td): dss[td['_x_axis_term']]['_data']
+            sort_fn = lambda tk_td: dss[tk_td[1]['_x_axis_term']]['_data']
+
             itr1 = sorted(itr1, key=sort_fn)
             for _vqs_num, (_data, itr2) in enumerate(groupby(itr1, sort_fn)):
                 x_axis_vqs_groups[x_axis][_vqs_num] = _x_vqs = {}
@@ -245,7 +264,9 @@ class Chart(object):
                 x_sortf, x_mapf, x_mts = (None, None, False)
             ptype_x_y_terms = defaultdict(list)
             for vqs_group in vqs_groups.values(): 
-                x_term, y_terms_all = vqs_group.items()[0]
+                #patch by :mpag:
+                #x_term, y_terms_all = vqs_group.items()[0]
+                x_term, y_terms_all = list(vqs_group.items())[0]
                 y_terms_by_type = defaultdict(list)
                 for y_term in y_terms_all:
                     y_terms_by_type[cht_typ_grp(y_term)].append(y_term)
@@ -288,11 +309,15 @@ class Chart(object):
                                          [value_dict[y_field] for y_field 
                                           in y_fields]) 
                                         for value_dict in x_vqs)
-                                sort_key = ((lambda(x, y): x_sortf(x)) 
+                                #patch by :mpag:
+                                #sort_key = ((lambda(x, y): x_sortf(x)) 
+                                sort_key = (( lambda x_y : x_sortf(x_y[0])) 
                                             if x_sortf is not None else None)
                                 data = sorted(data, key=sort_key)
                         else:
-                            sort_key = ((lambda(x, y): x_sortf(x)) 
+                            #patch by :mpag:
+                            #sort_key = ((lambda(x, y): x_sortf(x)) 
+                            sort_key = ((lambda x_y : x_sortf(x_y[0])) 
                                             if x_sortf is not None else None)
                             data = sorted(
                                     ((value_dict[x_field], 
@@ -374,12 +399,16 @@ class Chart(object):
                             data = ((x_mapf(x_value), y_vals) for 
                                     (x_value, y_vals) in 
                                     y_values_multi.iteritems())
-                            sort_key = ((lambda(x, y): x_sortf(x)) if x_sortf 
+                            #patch by :mpag:
+                            #sort_key = ((lambda(x, y): x_sortf(x)) if x_sortf 
+                            sort_key = ((lambda x_y : x_sortf(x_y[0])) if x_sortf 
                                         is not None else None)
                             data = sorted(data, key=sort_key)
                     else:
                         data = y_values_multi.iteritems()
-                        sort_key = ((lambda(x, y): x_sortf(x)) if x_sortf 
+                        #patch by :mpag:
+                        #sort_key = ((lambda(x, y): x_sortf(x)) if x_sortf 
+                        sort_key = ((lambda x_y : x_sortf(x_y[0])) if x_sortf 
                                     is not None else None)
                         data = sorted(data, key=sort_key)
                         if x_mapf:

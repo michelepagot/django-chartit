@@ -4,7 +4,11 @@ from itertools import groupby, chain, islice
 from operator import itemgetter
 # use SortedDict instead of native OrderedDict for Python 2.6 compatibility
 from django.utils.datastructures import SortedDict
-from validation import clean_dps, clean_pdps
+
+#patch by :mpag:
+#from validation import clean_dps, clean_pdps
+from chartit.validation import clean_dps, clean_pdps
+
 from chartit.validation import clean_sortf_mapf_mts
 
 class DataPool(object):
@@ -105,15 +109,21 @@ class DataPool(object):
         # TODO: using str(source.query) was the only way that I could think of
         # to compare whether two sources are exactly same. Need to figure out
         # if there is a better way. - PG
-        sort_grp_fn = lambda (tk, td): tuple(chain(str(td['source'].query), 
-                                              [td[t] for t in addl_grp_terms]))
+
+        # Patch by :mpag: for Python3
+        #sort_grp_fn = lambda (tk, td): tuple(chain(str(td['source'].query), 
+        #                                      [td[t] for t in addl_grp_terms]))
+        sort_grp_fn = lambda tk_td : tuple(chain(str(tk_td[1]['source'].query), 
+                                              [tk_td[1][t] for t in addl_grp_terms]))
         s = sorted(self.series.items(), key=sort_grp_fn)
         # The following groupby will create an iterator which returns 
         # <(grp-1, <(tk, td), ...>), (grp-2, <(tk, td), ...>), ...>
         # where sclt is a source, category, legend_by tuple
         qg = groupby(s, sort_grp_fn)
         if sort_by_term is not None:
-            sort_by_fn = lambda (tk, td): -1*(abs(td[sort_by_term]))
+            # Patch by :mpag: for Python3
+            #sort_by_fn = lambda (tk, td): -1*(abs(td[sort_by_term]))
+            sort_by_fn = lambda tk_td: -1*(abs(tk_td[1][sort_by_term]))
         else:
             sort_by_fn = None
         qg = [sorted(itr, key=sort_by_fn) for (grp, itr) in qg]
